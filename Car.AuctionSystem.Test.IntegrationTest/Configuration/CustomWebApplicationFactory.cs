@@ -3,6 +3,7 @@ using Car.AuctionSystem.Test.IntegrationTest.Seed;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -11,11 +12,26 @@ namespace Car.AuctionSystem.Test.IntegrationTest.Configuration
 {
     public class CustomWebApplicationFactory<TStartup> : WebApplicationFactory<TStartup> where TStartup : class
     {
+        private readonly IConfiguration _configuration;
+
+        public CustomWebApplicationFactory()
+        {
+            _configuration = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory()) 
+                .AddJsonFile("appsettings.IntegrationTests.json", optional: true)
+                .Build();
+        }
+
         public HttpClient CreateClientWithHttps()
         {
+            var baseUrl = _configuration["TestSettings:BaseUrl"];
+
+            if (string.IsNullOrEmpty(baseUrl))
+                throw new InvalidOperationException("BaseUrl is not configured in appsettings.IntegrationTests.json.");
+
             return CreateClient(new WebApplicationFactoryClientOptions
             {
-                BaseAddress = new Uri("https://localhost:44318")
+                BaseAddress = new Uri(baseUrl)
             });
         }
 
